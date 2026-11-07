@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createMarket, fmt } from './src/market.js';
+const VERSION = Date.now().toString(36);
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = join(import.meta.dirname, 'public');
@@ -100,9 +101,10 @@ createServer(async (req, res) => {
     // Static
     const file = normalize(join(PUBLIC, p === '/' ? 'index.html' : p));
     if (!file.startsWith(PUBLIC)) return send(res, 403, { ok: false });
-    const data = await readFile(file).catch(() => null);
-    if (!data) { const idx = await readFile(join(PUBLIC, 'index.html')); res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(idx); }
-    res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    let data = await readFile(file).catch(() => null);
+    const isHtml = !data || extname(file) === '.html';
+    if (isHtml) data = (await readFile(join(PUBLIC, 'index.html'), 'utf8')).replace('/app.js', `/app.js?v=${VERSION}`);
+    res.writeHead(200, { 'Content-Type': isHtml ? TYPES['.html'] : TYPES[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store, max-age=0' });
     res.end(data);
   } catch (e) {
     console.error(e);

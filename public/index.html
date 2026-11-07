@@ -175,6 +175,46 @@ h1,h2,h3{margin:0;letter-spacing:-.035em}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;padding:12px 18px;border-radius:14px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;box-shadow:var(--shadow2);animation:up .3s both;max-width:90vw}
 .confetti{position:fixed;z-index:80;width:10px;height:14px;border-radius:3px;pointer-events:none;animation:confetti 1.6s cubic-bezier(.1,.7,.3,1) forwards}
 
+
+/* ---------- easy buy ---------- */
+.easy{max-width:520px;margin:0 auto;padding:18px 0 40px}
+.ehead{display:flex;align-items:center;justify-content:space-between;height:44px;margin-bottom:10px}
+.eback{width:42px;height:42px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line),var(--shadow);font-size:18px}
+.edots{display:flex;gap:6px}.edots i{width:28px;height:6px;border-radius:9px;background:var(--soft2);transition:.3s}.edots i.on{background:linear-gradient(90deg,#12b886,#0b8a63)}
+.etitle{font-size:clamp(30px,6vw,40px);font-weight:900;letter-spacing:-.04em;text-align:center;margin:8px 0 6px}
+.esub{text-align:center;color:var(--mute);margin:0 0 22px}
+.egrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.etile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px;border-radius:22px;background:#fff;box-shadow:inset 0 0 0 1px var(--line),var(--shadow);text-align:left;transition:transform .15s,box-shadow .15s}
+.etile:hover,.etile:active{transform:translateY(-2px);box-shadow:inset 0 0 0 2px var(--em2),var(--shadow2)}
+.etile .ei{font-size:34px}.etile b{font-size:17px;letter-spacing:-.02em}.etile small{color:var(--mute);font-weight:600}
+.eamount{display:flex;align-items:center;justify-content:center;gap:26px;margin:26px 0 18px;text-align:center}
+.eround{width:64px;height:64px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1px var(--line),var(--shadow);font-size:30px;font-weight:700}
+.eround:active{transform:scale(.94)}
+.ebig{font-size:76px;font-weight:900;letter-spacing:-.05em;line-height:1}
+.eunit{color:var(--mute);font-weight:700;margin-top:4px}
+.echips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.echips button{height:42px;padding:0 18px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font-weight:800}
+.echips button.on{background:var(--ink);color:#fff;box-shadow:none}
+.ebtn{width:100%;height:60px;font-size:18px;border-radius:20px;margin-top:26px}
+.eopts{display:flex;flex-direction:column;gap:10px}
+.eopt{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 1px var(--line),var(--shadow);transition:.15s}
+.eopt .ei{font-size:30px}.eopt b{display:block;font-size:17px}.eopt small{display:block;color:var(--mute);font-size:13px}
+.eopt.on{box-shadow:inset 0 0 0 2px var(--em2),0 12px 30px -14px rgba(11,138,99,.5);background:var(--emsoft)}
+.etotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding:16px 18px;border-radius:18px;background:var(--soft)}
+.etotal span{color:var(--mute);font-weight:700}.etotal b{font-size:24px;font-weight:900}
+.ereceipt{text-align:center;padding:24px}
+.erows{margin-top:14px;text-align:left}
+.erows div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.erows div:last-child{border:0}.erows span{color:var(--mute)}
+.enote{margin-top:14px;padding:12px;border-radius:14px;background:var(--emsoft);color:var(--em);font-weight:700;font-size:13px}
+.ehold{position:relative;overflow:hidden;width:100%;height:64px;margin-top:18px;border-radius:22px;background:var(--ink);color:#fff;font-weight:800;font-size:17px;user-select:none;-webkit-user-select:none;touch-action:none}
+.ehold .fillbar{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#12b886,#0b8a63)}
+.ehold .lbl{position:relative}
+.ehold.holding{transform:scale(.98)}
+.esuccess{text-align:center}
+.echeck{width:96px;height:96px;margin:10px auto 8px;border-radius:50%;display:grid;place-items:center;font-size:46px;color:#fff;background:linear-gradient(135deg,#19c58b,#0a7a5a);box-shadow:0 16px 40px -12px rgba(11,138,99,.6);animation:pop .6s both}
+.echeck.grey{background:var(--faint);box-shadow:none}
+
 /* ---------- product shell ---------- */
 .tabs{display:flex;gap:4px;margin-left:18px;padding:4px;border-radius:14px;background:var(--soft)}
 .tabs a{font-size:14px;font-weight:600;color:var(--mute);padding:8px 14px;border-radius:10px;transition:.15s}
@@ -250,7 +290,7 @@ h1,h2,h3{margin:0;letter-spacing:-.035em}
  .trow.h{display:none}.trow{grid-template-columns:1fr auto;gap:6px 12px;padding:14px}.trow>*:nth-child(n+3){font-size:12px}
  .trow .hide-m{display:none}
  .rrow>div:first-child{order:3;grid-column:1/-1;margin-top:-4px}
- .bottomnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+ .bottomnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
  .bottomnav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--mute)}
  .bottomnav a span{font-size:20px}.bottomnav a.on{color:var(--em)}
  main{padding-bottom:110px}.quotes{top:61px}}
@@ -264,7 +304,7 @@ h1,h2,h3{margin:0;letter-spacing:-.035em}
 <nav class="nav" id="nav">
   <a class="brand" href="#/"><img src="/logo.svg" alt="">aniq<em>auksion</em></a>
   <div class="tabs" id="tabs">
-    <a href="#/" data-t="home">Bozor</a><a href="#/lots" data-t="lots">Savdolar</a><a href="#/results" data-t="results">Natijalar</a><a href="#/me" data-t="me">Kabinet</a>
+    <a href="#/" data-t="home">Bozor</a><a href="#/buy" data-t="buy">⚡ Oson xarid</a><a href="#/lots" data-t="lots">Savdolar</a><a href="#/results" data-t="results">Natijalar</a><a href="#/me" data-t="me">Kabinet</a>
   </div>
   <div class="sp"></div>
   <div class="session hide"><span class="live"></span><span id="clock">—</span></div>
@@ -273,7 +313,7 @@ h1,h2,h3{margin:0;letter-spacing:-.035em}
 </nav>
 <div class="quotes" id="quotes"><div id="qtrack"></div></div>
 <main id="app"></main>
-<nav class="bottomnav" id="bottomnav"><a href="#/" data-t="home"><span>📊</span>Bozor</a><a href="#/lots" data-t="lots"><span>🔨</span>Savdolar</a><a href="#/results" data-t="results"><span>📜</span>Natijalar</a><a href="#/me" data-t="me"><span>👤</span>Kabinet</a></nav>
+<nav class="bottomnav" id="bottomnav"><a href="#/" data-t="home"><span>📊</span>Bozor</a><a href="#/buy" data-t="buy"><span>⚡</span>Xarid</a><a href="#/lots" data-t="lots"><span>🔨</span>Savdolar</a><a href="#/results" data-t="results"><span>📜</span>Natijalar</a><a href="#/me" data-t="me"><span>👤</span>Kabinet</a></nav>
 <script type="module" src="/app.js"></script>
 </body>
 </html>

@@ -56,7 +56,7 @@ function render() {
   if (!S) return;
   $('#wbal').textContent = `${innerWidth < 560 ? '' : 'Hisob: '}${mln(S.wallet.balance - S.wallet.reserved)}${innerWidth < 560 ? '' : " so'm"}`;
   const h = location.hash || '#/';
-  const tab = h.startsWith('#/lot') ? 'lots' : h.startsWith('#/results') ? 'results' : h.startsWith('#/me') ? 'me' : 'home';
+  const tab = h.startsWith('#/buy') ? 'buy' : h.startsWith('#/lot') ? 'lots' : h.startsWith('#/results') ? 'results' : h.startsWith('#/me') ? 'me' : 'home';
   document.querySelectorAll('[data-t]').forEach((a) => a.classList.toggle('on', a.dataset.t === tab));
   paintQuotes();
   const m = h.match(/^#\/lot\/(\w+)/);
@@ -64,6 +64,7 @@ function render() {
   if (h.startsWith('#/lots')) return lotsPage();
   if (h.startsWith('#/results')) return resultsPage();
   if (h.startsWith('#/me')) return mePage();
+  if (h.startsWith('#/buy')) return buyPage();
   return landing();
 }
 function tickUI() {
@@ -139,6 +140,125 @@ function runKpis() {
   });
 }
 
+
+// ---------------- Oson xarid (easy buy) ----------------
+const B = { step: 1, lot: null, qty: 10, preset: 'normal', prices: null, placed: null };
+function buyPage() {
+  const key = `buy:${B.step}:${B.lot}:${B.step === 5 ? (S.lots.find((l) => l.id === B.lot)?.phase + ':' + S.lots.find((l) => l.id === B.lot)?.round) : ''}`;
+  if (view.key === key) { if (B.step === 5) easyWaitTick(); return; }
+  view.key = key;
+  const L = S.lots.find((l) => l.id === B.lot);
+  const dots = `<div class="edots">${[1, 2, 3, 4].map((i) => `<i class="${i <= Math.min(B.step, 4) ? 'on' : ''}"></i>`).join('')}</div>`;
+  const back = B.step > 1 && B.step < 5 ? `<button class="eback" id="eback">←</button>` : '<span></span>';
+  const head = (t, sub) => `<div class="ehead">${back}${dots}<span></span></div><h1 class="etitle in">${t}</h1>${sub ? `<p class="esub in" style="--d:1">${sub}</p>` : ''}`;
+  let body = '';
+  if (B.step === 1) {
+    body = head('Nima kerak?', 'Tovarni tanlang') + `<div class="egrid">${S.lots.map((l, k) => `<button class="etile in" style="--d:${k}" data-pick="${l.id}"><span class="ei">${l.icon}</span><b>${esc(l.product)}</b><small>${mln(lastP(l) ?? l.reserve)} so'm/t</small></button>`).join('')}</div>`;
+  } else if (B.step === 2) {
+    body = head('Qancha kerak?', `${L.icon} ${esc(L.product)} · ${esc(L.depot)}`) + `
+      <div class="eamount in" style="--d:2"><button class="eround" data-dq="-1">−</button><div><div class="ebig num" id="eqty">${B.qty}</div><div class="eunit">tonna</div></div><button class="eround" data-dq="1">+</button></div>
+      <div class="echips in" style="--d:3">${[5, 10, 20, 50].filter((x) => x <= L.supply).map((x) => `<button data-sq="${x}" class="${B.qty === x ? 'on' : ''}">${x} t</button>`).join('')}</div>
+      <div class="tiny" style="text-align:center;margin-top:10px">Lotda jami ${fmt(L.supply)} t</div>
+      <button class="btn ebtn" id="enext">Davom etish →</button>`;
+  } else if (B.step === 3) {
+    const P = B.prices;
+    const opts = [['low', '🐢', 'Tejamkor', 'Arzon, lekin olmasligingiz mumkin'], ['normal', '⚖️', 'Odatiy', 'Oxirgi savdolar darajasida'], ['high', '🚀', 'Albatta olay', 'Olish ehtimoli eng yuqori']];
+    body = head('Qanchagacha to\'laysiz?', 'Bu — eng yuqori chegara. Odatda kamroq to\'laysiz.') + `
+      <div class="eopts">${opts.map(([k, i, t, d], n) => `<button class="eopt in ${B.preset === k ? 'on' : ''}" style="--d:${n + 2}" data-pr="${k}"><span class="ei">${i}</span><div style="flex:1;text-align:left"><b>${t}</b><small>${d}</small></div><div class="num" style="font-weight:900">${mln(P[k])}</div></button>`).join('')}</div>
+      <div class="etotal in" style="--d:5"><span>Ko'pi bilan</span><b class="num" id="etot">${mln(B.qty * P[B.preset])} so'm</b></div>
+      <button class="btn ebtn" id="enext">Davom etish →</button>`;
+  } else if (B.step === 4) {
+    const price = B.prices[B.preset], max = B.qty * price, resv = max + Math.ceil(max / 1000);
+    body = head('Tasdiqlang', '') + `
+      <div class="card ereceipt in" style="--d:1">
+        <div class="ei" style="font-size:44px">${L.icon}</div>
+        <div class="ebig num" style="font-size:44px">${B.qty} t</div>
+        <div class="muted" style="font-weight:700">${esc(L.product)} · ${esc(L.grade)}</div>
+        <div class="erows">
+          <div><span>Eng ko'pi bilan</span><b class="num">${fmt(price)} so'm/t</b></div>
+          <div><span>Band qilinadi</span><b class="num">${mln(resv)} so'm</b></div>
+          <div><span>Ombor</span><b>${esc(L.depot)}</b></div>
+          <div><span>Yetkazish</span><b>${esc(L.delivery)}</b></div>
+        </div>
+        <div class="enote">⚖️ Hamma g'oliblar bir xil narx to'laydi. Ortiqcha pul avtomatik qaytadi.</div>
+      </div>
+      <button class="ehold in" style="--d:2" id="ehold"><span class="fillbar"></span><span class="lbl">Bosib turing — tasdiqlash</span></button>`;
+  } else {
+    body = `<div class="ehead"><span></span><span></span><span></span></div><div id="ewait"></div>`;
+  }
+  app.innerHTML = `<div class="easy">${body}</div>`;
+  const eb = $('#eback'); if (eb) eb.onclick = () => { B.step--; view.key = ''; render(); };
+  app.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => { B.lot = b.dataset.pick; const l = S.lots.find((x) => x.id === B.lot); B.qty = Math.min(B.qty, l.supply); B.step = 2; view.key = ''; render(); });
+  const setQ = (q) => { B.qty = Math.max(1, Math.min(L.supply, q)); $('#eqty').textContent = B.qty; app.querySelectorAll('[data-sq]').forEach((x) => x.classList.toggle('on', +x.dataset.sq === B.qty)); };
+  app.querySelectorAll('[data-dq]').forEach((b) => b.onclick = () => setQ(B.qty + +b.dataset.dq));
+  app.querySelectorAll('[data-sq]').forEach((b) => b.onclick = () => setQ(+b.dataset.sq));
+  app.querySelectorAll('[data-pr]').forEach((b) => b.onclick = () => { B.preset = b.dataset.pr; app.querySelectorAll('[data-pr]').forEach((x) => x.classList.toggle('on', x === b)); $('#etot').textContent = mln(B.qty * B.prices[B.preset]) + " so'm"; });
+  const nx = $('#enext');
+  if (nx) nx.onclick = async () => {
+    if (B.step === 2) {
+      const [lo, no, hi] = await Promise.all(['low', 'normal', 'high'].map((u) => api('/api/agent/suggest', { lotId: B.lot, need: B.qty, urgency: u })));
+      const tk = L.tick * Math.max(1, Math.round(L.reserve / L.tick / 200));
+      const normal = Math.max(no.maxPrice, lo.maxPrice + tk);
+      B.prices = { low: lo.maxPrice, normal, high: Math.max(hi.maxPrice, normal + tk) };
+    }
+    B.step++; view.key = ''; render();
+  };
+  const hold = $('#ehold');
+  if (hold) {
+    let t0 = 0, raf = 0, done = false;
+    const bar = hold.querySelector('.fillbar');
+    const stop = () => { if (done) return; cancelAnimationFrame(raf); bar.style.width = '0%'; hold.classList.remove('holding'); };
+    const step = () => { const k = Math.min(1, (performance.now() - t0) / 900); bar.style.width = k * 100 + '%'; if (k < 1) raf = requestAnimationFrame(step); else { done = true; confirmEasy(); } };
+    const start = (e) => { e.preventDefault(); if (done) return; t0 = performance.now(); hold.classList.add('holding'); raf = requestAnimationFrame(step); };
+    hold.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => hold.addEventListener(ev, stop));
+    hold.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { done = true; confirmEasy(); } });
+  }
+  if (B.step === 5) easyWaitTick(true);
+}
+async function confirmEasy() {
+  const L = S.lots.find((l) => l.id === B.lot);
+  if (L.phase !== 'open' || L.closesAt - nowS() < 1500) { toast('Bu raund yopilmoqda — keyingi raundga yuboramiz'); B.retry = true; }
+  else {
+    const r = await api('/api/orders', { lotId: L.id, buyer: BUYER, name: NAME, qty: B.qty, maxPrice: B.prices[B.preset], idemKey: `${BUYER}-${L.id}-${L.round}-easy` });
+    if (!r.ok) { toast(r.reason); view.key = ''; render(); return; }
+    B.placed = { round: L.round, receipt: r.receipt };
+  }
+  if (navigator.vibrate) try { navigator.vibrate(30); } catch {}
+  B.step = 5; view.key = ''; render();
+}
+async function easyWaitTick(first) {
+  const L = S.lots.find((l) => l.id === B.lot), box = $('#ewait'); if (!box) return;
+  if (B.retry && L.phase === 'open' && L.closesAt - nowS() > 3000) {
+    B.retry = false;
+    const r = await api('/api/orders', { lotId: L.id, buyer: BUYER, name: NAME, qty: B.qty, maxPrice: B.prices[B.preset], idemKey: `${BUYER}-${L.id}-${L.round}-easy` });
+    if (r.ok) B.placed = { round: L.round, receipt: r.receipt }; else { toast(r.reason); return; }
+  }
+  const res = B.placed && S.mine.find((m) => m.lot === L.id && m.round === B.placed.round);
+  const state = res ? 'done' : B.placed ? 'wait' : 'queued';
+  if (box.dataset.s === state && state !== 'wait') return;
+  if (box.dataset.s === 'wait' && state === 'wait') return;
+  box.dataset.s = state;
+  if (state === 'done') {
+    box.innerHTML = `<div class="esuccess in"><div class="echeck ${res.x ? '' : 'grey'}">${res.x ? '✓' : '↩'}</div>
+      <h1 class="etitle">${res.x ? `${fmt(res.x)} tonna sizniki!` : 'Bu safar olmadingiz'}</h1>
+      <p class="esub">${res.x ? `${esc(L.product)} · narx ${fmt(res.price)} so'm/t — hamma uchun bir xil` : 'Band qilingan pul to\'liq qaytdi'}</p>
+      <div class="card ereceipt" style="margin-top:18px"><div class="erows">
+        <div><span>To'landi</span><b class="num">${mln(res.debit)} so'm</b></div>
+        <div><span>Qaytdi</span><b class="num up">${mln(res.released)} so'm</b></div>
+        <div><span>Olib ketish</span><b>${esc(L.depot)}</b></div></div></div>
+      <div style="display:flex;gap:10px;margin-top:16px"><button class="btn ghost" style="flex:1" id="eagain">Yana xarid</button><a class="btn" style="flex:1" href="#/lot/${L.id}">Batafsil</a></div></div>`;
+    if (res.x) setTimeout(confetti, 200);
+    $('#eagain').onclick = () => { Object.assign(B, { step: 1, lot: null, placed: null }); view.key = ''; render(); };
+  } else {
+    box.innerHTML = `<div class="esuccess in"><div class="echeck">✓</div>
+      <h1 class="etitle">Taklif muhrlandi</h1><p class="esub">${state === 'queued' ? 'Keyingi raund ochilishi bilan yuboriladi' : 'Raund yopilishi bilan natijani ko\'rsatamiz'}</p>
+      <div class="bigring" data-timer="${L.id}" style="margin:18px auto">${ring(1, 200, 12)}<div class="t"><b>—</b><span class="muted">yopilishigacha</span></div></div>
+      <div class="card ereceipt"><div class="erows"><div><span>${L.icon} ${esc(L.product)}</span><b>${B.qty} t</b></div><div><span>Eng ko'pi bilan</span><b class="num">${fmt(B.prices[B.preset])}</b></div>
+      ${B.placed ? `<div><span>Muhr</span><b class="mono">#${B.placed.receipt.commit.slice(0, 10)}…</b></div>` : ''}</div></div>
+      <p class="tiny" style="text-align:center;margin-top:12px">Sahifani yopsangiz ham bo'ladi — natija Kabinetda saqlanadi.</p></div>`;
+  }
+}
+
 // ---------------- pages ----------------
 function landing() {
   if (view.key !== 'home') {
@@ -150,7 +270,7 @@ function landing() {
         <span class="pill g" style="width:max-content"><span class="live"></span>UZEX 2035 · AI agentlar davri</span>
         <h1 style="margin-top:16px">Tezlik emas.<br><span class="gr">Adolat.</span></h1>
         <p>Yashirin takliflar, bitta umumiy narx, avtomatik isbot. Millisekundlar hech narsani hal qilmaydi — narx va ehtiyoj hal qiladi.</p>
-        <div class="ctas" style="justify-content:flex-start"><a class="btn" href="#/lots">Savdoga kirish →</a><button class="btn ghost" data-call>📞 AI menga qo'ng'iroq qilsin</button></div>
+        <div class="ctas" style="justify-content:flex-start"><a class="btn" href="#/buy">⚡ Oson xarid — 4 qadam</a><a class="btn ghost" href="#/lots">Professional rejim</a><button class="btn ghost" data-call>📞 Qo'ng'iroq</button></div>
         <div class="badges"><span class="pill">🔒 Muhrlangan takliflar</span><span class="pill">⚖️ Yagona narx</span><span class="pill">🔀 Tartibdan mustaqil</span><span class="pill">🧾 Tekshiriladigan protokol</span></div>
       </div>
       <a class="card next in" style="--d:1" href="#/lot/${soon.id}">
