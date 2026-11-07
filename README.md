@@ -19,5 +19,5 @@ Agent server tools (header `x-tool-secret: $VOICE_TOOL_SECRET`):
 
 Dynamic variables passed to the agent on each call: `buyer_id`, `purpose` (`order` | `result`), `lots`, `result_text`.
 
-## Demo data
-Lots, prices and the other bidders are simulated. No real money.
+## Data
+Market prices, price history, sellers and totals come from the organizers' UZEX dataset (500 000 deals, 2022–2026): `src/data/market.json`, built by `python3 scripts/build_real.py <dataset_dir> src/data/market.json`. Live rounds and the other bidders are simulated. No real money.

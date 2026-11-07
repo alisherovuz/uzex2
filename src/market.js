@@ -5,16 +5,26 @@ const sha = (s) => createHash('sha256').update(s).digest('hex');
 const now = () => Date.now();
 
 // Demo lots. All prices so'm per tonne, invented for the demo.
-export const CATEGORIES = { oil: 'Neft mahsulotlari', gas: 'Gaz', build: 'Qurilish', food: 'Oziq-ovqat', metal: 'Metall' };
-export const LOT_TERMS = [
-  { id: 'diesel', cat: 'oil', product: 'Dizel yoqilg\'isi', grade: 'Evro-5', depot: 'Toshkent neft bazasi', seller: 'Sharq Neft Savdo AJ', icon: '⛽', supply: 120, reserve: 14_200_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 10 kun' },
-  { id: 'ai92', cat: 'oil', product: 'Benzin AI-92', grade: 'O\'zDSt 27', depot: 'Farg\'ona ombori', seller: 'Vodiy Yoqilg\'i MChJ', icon: '🚗', supply: 80, reserve: 15_900_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 7 kun' },
-  { id: 'gas', cat: 'gas', product: 'Suyultirilgan gaz', grade: 'Propan-butan', depot: 'Qarshi terminali', seller: 'Janub Gaz Resurs AJ', icon: '🔥', supply: 60, reserve: 8_000_000, tick: 10_000, unit: 1, delivery: 'Temir yo\'l, FCA · 5 kun' },
-  { id: 'cement', cat: 'build', product: 'Sement', grade: 'M400', depot: 'Ohangaron zavodi', seller: 'Ohangaron Qurilish Mollari', icon: '🏗️', supply: 400, reserve: 950_000, tick: 1_000, unit: 1, delivery: 'Zavoddan olib ketish · 14 kun' },
-  { id: 'rebar', cat: 'metal', product: 'Armatura', grade: 'A500C, Ø12', depot: 'Bekobod ombori', seller: 'Sirdaryo Metall Savdo', icon: '🔩', supply: 150, reserve: 8_600_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 10 kun' },
-  { id: 'wheat', cat: 'food', product: 'Bug\'doy', grade: '3-sinf', depot: 'Jizzax elevatori', seller: 'Jizzax Don Mahsulotlari', icon: '🌾', supply: 200, reserve: 3_400_000, tick: 10_000, unit: 1, delivery: 'Elevatordan olib ketish · 10 kun' },
-  { id: 'sugar', cat: 'food', product: 'Oq shakar', grade: 'TS2 kategoriya', depot: 'Xorazm ombori', seller: 'Xorazm Shakar AJ', icon: '🍬', supply: 90, reserve: 8_200_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 7 kun' },
-];
+import { readFileSync } from 'node:fs';
+// Real market facts from the organizers' UZEX dataset (500 000 deals, 2022–2026), built by scripts/build_real.py.
+export const DATA = JSON.parse(readFileSync(new URL('./data/market.json', import.meta.url)));
+export const CATEGORIES = { oil: 'Neft mahsulotlari', gas: 'Gaz', build: 'Qurilish', metal: 'Metall', food: 'Oziq-ovqat' };
+const META = {
+  diesel: { code: 'DT', grade: 'DT-E-K5', tick: 10_000, delivery: 'Ombordan olib ketish · 10 kun' },
+  ai92: { code: 'AI', grade: 'AI-92', tick: 10_000, delivery: 'Ombordan olib ketish · 7 kun' },
+  gas: { code: 'SG', grade: 'PBA (propan-butan)', tick: 10_000, delivery: 'Temir yo\'l, FCA · 5 kun' },
+  cement: { code: 'SM', grade: 'CEM II/B-K 32,5N', tick: 1_000, delivery: 'Zavoddan olib ketish · 14 kun' },
+  rebar: { code: 'AR', grade: 'A500C, Ø12 mm', tick: 10_000, delivery: 'Ombordan olib ketish · 10 kun' },
+  wheat: { code: 'BG', grade: 'Oziq-ovqat, 4-sinf', tick: 10_000, delivery: 'Elevatordan olib ketish · 10 kun' },
+  sugar: { code: 'SH', grade: 'Oq shakar', tick: 10_000, delivery: 'Ombordan olib ketish · 7 kun' },
+};
+const r2 = (v, t) => Math.round(v / t) * t;
+export const LOT_TERMS = Object.entries(DATA.products).map(([id, p]) => {
+  const m = META[id];
+  const lotSize = id === 'cement' ? 400 : id === 'wheat' ? 600 : Math.max(40, r2(p.lot * 5, 10));
+  return { id, cat: p.cat, code: m.code, icon: m.code, product: p.name, grade: m.grade, depot: p.sellers[0]?.region || '—', seller: p.sellers[0]?.name || '—', sellerInn: p.sellers[0]?.inn,
+    supply: lotSize, reserve: r2(p.p50 * 0.97, m.tick), tick: m.tick, unit: 1, delivery: m.delivery, ref: { p10: p.p10, p50: p.p50, p90: p.p90, deals: p.deals } };
+});
 
 const BOT_NAMES = ['Namangan Qurilish', 'Andijon Agro Trans', 'Buxoro Avto Servis', 'Samarqand Non', 'Xorazm Logistika', 'Qo\'qon Un Kombinati', 'Termiz Energiya', 'Navoiy Beton', 'Chirchiq Transport', 'Guliston Fermer'];
 const BOT_WHY = ['Ombor zaxirasi 4 kunga yetadi', 'Haftalik ehtiyoj', 'Narx oshishidan oldin zaxira', 'Shartnoma bo\'yicha yetkazish', 'Mavsumiy talab', 'Minimal zaxira'];
@@ -51,19 +61,11 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     return L;
   }
 
-  // Demo history so quotes are not empty at start (clearly synthetic).
+  // Real daily history from the dataset (median price per tonne, traded volume, deal count).
   function seedHistory(terms) {
-    const h = [];
-    let p = terms.reserve * (1 + rng() * 0.02);
-    for (let k = 8; k >= 1; k--) {
-      p = Math.max(terms.reserve, p * (1 + (rng() - 0.45) * 0.03));
-      const price = Math.round(p / terms.tick) * terms.tick;
-      const demand = Math.round(terms.supply * (0.8 + rng() * 0.9));
-      const traded = Math.min(terms.supply, demand);
-      const entry = { round: -k, price, traded, demand, supply: terms.supply, buyers: 3 + Math.floor(rng() * 6), at: now() - k * 15 * 60_000, demo: true };
-      h.push(entry);
-      results.push({ lot: terms.id, product: terms.product, icon: terms.icon, ...entry });
-    }
+    const p = DATA.products[terms.id];
+    const h = p.daily.map((x, i) => ({ round: `R${i}`, date: x.d, price: r2(x.p, terms.tick), traded: Math.round(x.v), demand: Math.round(x.v), supply: Math.round(x.v), buyers: x.n, at: Date.parse(x.d + 'T12:00:00+05:00'), src: 'reyestr' }));
+    for (const e of h.slice(-15)) results.push({ lot: terms.id, product: terms.product, icon: terms.code, ...e });
     return h;
   }
 
@@ -74,8 +76,7 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     const span = L.closesAt - L.opensAt;
     L.bots = names.map((name, i) => {
       const qty = Math.max(1, Math.round((targetDemand / k) * (0.5 + rng())));
-      const steps = Math.floor(rng() * rng() * 9); // most bids near reserve, a few higher
-      const maxPrice = L.reserve + (Math.floor(rng() * 3) - 1 + steps) * L.tick * Math.max(1, Math.round(L.reserve / L.tick / 400));
+      const maxPrice = r2(L.reserve * (0.99 + rng() * rng() * 0.08), L.tick); // a few just below reserve, most near the market median
       const late = i === 0; // one bot always submits in the last 2 seconds — same treatment
       const at = L.opensAt + (late ? span - 1500 - rng() * 500 : span * (0.05 + rng() * 0.8));
       return { buyer: 'bot:' + name, name, qty, maxPrice: Math.max(0, maxPrice - (maxPrice % L.tick)), at, why: BOT_WHY[Math.floor(rng() * BOT_WHY.length)], done: false };
@@ -128,12 +129,12 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     L.last = { ...record, settle, eligibleDemand: res.eligibleDemand, unsold: res.unsold ?? 0 };
     const entry = { round: L.round, price: res.price, traded: res.traded, demand: res.eligibleDemand, supply: L.supply, buyers: frozen.length, at: L.closesAt, recordHash: record.recordHash };
     L.history = [...L.history, entry].slice(-20);
-    results.push({ lot: L.id, product: L.product, icon: L.icon, ...entry });
+    results.push({ lot: L.id, product: L.product, icon: L.code, ...entry, src: 'live' });
     if (results.length > 300) results.splice(0, results.length - 300);
     for (const st of settle) {
       if (st.buyer.startsWith('bot:')) continue;
       const list = myResults.get(st.buyer) || [];
-      list.push({ lot: L.id, product: L.product, icon: L.icon, round: L.round, at: L.closesAt, qty: st.qty, maxPrice: st.maxPrice, x: st.x, price: res.price, debit: st.debit, released: st.released, via: st.via });
+      list.push({ lot: L.id, product: L.product, icon: L.code, round: L.round, at: L.closesAt, qty: st.qty, maxPrice: st.maxPrice, x: st.x, price: res.price, debit: st.debit, released: st.released, via: st.via });
       myResults.set(st.buyer, list.slice(-50));
     }
     for (const fn of listeners) try { fn(L, settle); } catch {}
@@ -172,12 +173,12 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     const prices = L.history.map((h) => h.price).filter((p) => p != null);
     const r = (p) => Math.max(L.reserve, p - (p % L.tick));
     const med = prices.length ? [...prices].sort((a, b) => a - b)[Math.floor(prices.length / 2)] : L.reserve;
-    const hi = prices.length ? Math.max(...prices) : L.reserve;
+    const hi = prices.length ? [...prices].sort((a, b) => a - b)[Math.floor(prices.length * 0.9)] : L.reserve;
     let maxPrice = urgency === 'low' ? L.reserve : urgency === 'high' ? r(hi + L.tick * Math.max(1, Math.round(L.reserve / L.tick / 200))) : r(med);
     let qty = Math.max(1, Math.min(Math.round(need || L.supply / 5), L.supply));
     const reasons = [];
-    reasons.push(prices.length ? `Oxirgi ${prices.length} raundda narx ${fmt(Math.min(...prices))} – ${fmt(hi)}` : 'Hali tarix yo\'q — minimal narxdan boshlaymiz');
-    reasons.push(urgency === 'low' ? 'Shoshilinch emas: minimal narx, olmasangiz keyingi raund bor' : urgency === 'high' ? 'Shoshilinch: tarixdagi eng yuqori narxdan biroz yuqori — olish ehtimoli yuqori' : 'Odatiy: oxirgi raundlar mediani');
+    reasons.push(prices.length ? `Reyestr: oxirgi ${prices.length} savdo kunida narx ${fmt(Math.min(...prices))} – ${fmt(Math.max(...prices))}` : 'Hali tarix yo\'q — minimal narxdan boshlaymiz');
+    reasons.push(urgency === 'low' ? 'Tejamkor: minimal narx — olmasangiz keyingi raund bor' : urgency === 'high' ? 'Ishonchli: tarixiy narxlarning yuqori 10% darajasi' : 'Odatiy: oxirgi savdo kunlari mediani');
     if (budget && L.unit * qty * maxPrice > budget) {
       qty = Math.max(1, Math.floor(budget / (L.unit * maxPrice * 1.001)));
       reasons.push(`Byudjetga sig'ishi uchun hajm ${qty} t gacha kamaytirildi`);
@@ -189,7 +190,7 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
   function publicLot(L, viewer) {
     const mine = viewer ? L.orders.get(viewer) : null;
     const out = {
-      id: L.id, cat: L.cat, product: L.product, grade: L.grade, depot: L.depot, seller: L.seller, delivery: L.delivery, icon: L.icon, supply: L.supply, reserve: L.reserve, tick: L.tick, unit: L.unit,
+      id: L.id, cat: L.cat, code: L.code, ref: L.ref, product: L.product, grade: L.grade, depot: L.depot, seller: L.seller, delivery: L.delivery, icon: L.icon, supply: L.supply, reserve: L.reserve, tick: L.tick, unit: L.unit,
       round: L.round, phase: L.phase, opensAt: L.opensAt, closesAt: L.closesAt, revealUntil: L.revealUntil ?? null, seedHash: L.seedHash,
       sealed: L.orders.size, history: L.history,
       mine: mine ? { qty: mine.qty, maxPrice: mine.maxPrice, version: mine.version, reserved: mine.reserved } : null,
@@ -209,7 +210,8 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     const w = viewer ? wallet(viewer) : null;
     const dayAgo = now() - 24 * 3600_000;
     const recent = results.filter((r) => r.at >= dayAgo);
-    const market = {
+    const live = results.filter((r) => r.src === 'live');
+    const market = { data: DATA.global, liveRounds: live.length, liveTonnes: live.reduce((s, r) => s + r.traded, 0),
       turnover: recent.reduce((s, r) => s + (r.price || 0) * r.traded, 0),
       tonnes: recent.reduce((s, r) => s + r.traded, 0),
       rounds: recent.length,
