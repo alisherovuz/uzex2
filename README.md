@@ -10,7 +10,7 @@ Buyers (people, AI agents, or phone callers) privately submit **quantity + maxim
 Run: `npm start` · Test: `npm test`
 
 ## Voice (optional)
-Set env vars: `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_PHONE_NUMBER_ID` (the imported Twilio number), `VOICE_TOOL_SECRET`.
+Set env vars: `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_PHONE_NUMBER_ID` (the imported number), `VOICE_TOOL_SECRET`, `ELEVENLABS_TELEPHONY` (`sip` default, or `twilio`).
 Optional: `RESULT_CALLS=1` (call phone buyers back with results), `MAX_CALLS_PER_HOUR` (default 30).
 
 Agent server tools (header `x-tool-secret: $VOICE_TOOL_SECRET`):

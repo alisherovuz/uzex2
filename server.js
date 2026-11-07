@@ -9,7 +9,7 @@ const market = createMarket({ openMs: Number(process.env.OPEN_MS || 60_000), rev
 setInterval(() => { try { market.tick(); } catch (e) { console.error('tick', e); } }, 250);
 
 // ---------- Voice (ElevenLabs Agents + Twilio outbound) ----------
-const EL = { key: process.env.ELEVENLABS_API_KEY, agent: process.env.ELEVENLABS_AGENT_ID, phoneId: process.env.ELEVENLABS_PHONE_NUMBER_ID, secret: process.env.VOICE_TOOL_SECRET };
+const EL = { key: process.env.ELEVENLABS_API_KEY, agent: process.env.ELEVENLABS_AGENT_ID, phoneId: process.env.ELEVENLABS_PHONE_NUMBER_ID, secret: process.env.VOICE_TOOL_SECRET, via: process.env.ELEVENLABS_TELEPHONY || 'sip' };
 const voiceReady = () => !!(EL.key && EL.agent && EL.phoneId);
 const lastCall = new Map();
 let callsThisHour = { hour: 0, n: 0 };
@@ -30,15 +30,17 @@ async function placeCall({ phone, buyer, purpose, text }) {
   if (callsThisHour.n >= MAX_CALLS_PER_HOUR) return { ok: false, reason: 'Soatlik qo\'ng\'iroq limiti tugadi' };
   if (purpose === 'order' && Date.now() - (lastCall.get(phone) || 0) < 90_000) return { ok: false, reason: 'Biroz kuting — qo\'ng\'iroq yo\'lda' };
   callsThisHour.n++; lastCall.set(phone, Date.now());
-  const r = await fetch('https://api.elevenlabs.io/v1/convai/twilio/outbound-call', {
+  const path = EL.via === 'twilio' ? 'twilio/outbound-call' : 'sip-trunk/outbound-call';
+  const r = await fetch(`https://api.elevenlabs.io/v1/convai/${path}`, {
     method: 'POST', headers: { 'xi-api-key': EL.key, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       agent_id: EL.agent, agent_phone_number_id: EL.phoneId, to_number: phone,
-      conversation_initiation_client_data: { dynamic_variables: { buyer_id: buyer, purpose, lots: lotsSummary(), result_text: text || '' } },
+      conversation_initiation_client_data: { dynamic_variables: { buyer_id: buyer, purpose, lots: lotsSummary() || 'Hozir ochiq lot yo\'q', result_text: text || '' } },
+      telephony_call_config: { ringing_timeout_secs: 40 },
     }),
   });
   const body = await r.json().catch(() => ({}));
-  if (!r.ok || body.success === false) return { ok: false, reason: 'Qo\'ng\'iroq boshlanmadi', detail: body.detail || body.message };
+  if (!r.ok || body.success === false) { console.error('voice call failed', r.status, JSON.stringify(body).slice(0, 500)); return { ok: false, reason: 'Qo\'ng\'iroq boshlanmadi', detail: body.detail || body.message }; }
   return { ok: true, conversationId: body.conversation_id };
 }
 // Call buyers back with their result if they ordered by phone (or asked for it).
