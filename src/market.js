@@ -5,12 +5,15 @@ const sha = (s) => createHash('sha256').update(s).digest('hex');
 const now = () => Date.now();
 
 // Demo lots. All prices so'm per tonne, invented for the demo.
+export const CATEGORIES = { oil: 'Neft mahsulotlari', gas: 'Gaz', build: 'Qurilish', food: 'Oziq-ovqat', metal: 'Metall' };
 export const LOT_TERMS = [
-  { id: 'diesel', product: 'Dizel yoqilg\'isi', grade: 'Evro-5', depot: 'Toshkent neft bazasi', icon: '⛽', supply: 120, reserve: 14_200_000, tick: 10_000, unit: 1 },
-  { id: 'ai92', product: 'Benzin AI-92', grade: 'O\'zDSt', depot: 'Farg\'ona ombori', icon: '🚗', supply: 80, reserve: 15_900_000, tick: 10_000, unit: 1 },
-  { id: 'gas', product: 'Suyultirilgan gaz', grade: 'Propan-butan', depot: 'Qarshi terminali', icon: '🔥', supply: 60, reserve: 8_000_000, tick: 10_000, unit: 1 },
-  { id: 'cement', product: 'Sement', grade: 'M400', depot: 'Ohangaron zavodi', icon: '🏗️', supply: 400, reserve: 950_000, tick: 1_000, unit: 1 },
-  { id: 'wheat', product: 'Bug\'doy', grade: '3-sinf', depot: 'Jizzax elevatori', icon: '🌾', supply: 200, reserve: 3_400_000, tick: 10_000, unit: 1 },
+  { id: 'diesel', cat: 'oil', product: 'Dizel yoqilg\'isi', grade: 'Evro-5', depot: 'Toshkent neft bazasi', seller: 'Sharq Neft Savdo AJ', icon: '⛽', supply: 120, reserve: 14_200_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 10 kun' },
+  { id: 'ai92', cat: 'oil', product: 'Benzin AI-92', grade: 'O\'zDSt 27', depot: 'Farg\'ona ombori', seller: 'Vodiy Yoqilg\'i MChJ', icon: '🚗', supply: 80, reserve: 15_900_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 7 kun' },
+  { id: 'gas', cat: 'gas', product: 'Suyultirilgan gaz', grade: 'Propan-butan', depot: 'Qarshi terminali', seller: 'Janub Gaz Resurs AJ', icon: '🔥', supply: 60, reserve: 8_000_000, tick: 10_000, unit: 1, delivery: 'Temir yo\'l, FCA · 5 kun' },
+  { id: 'cement', cat: 'build', product: 'Sement', grade: 'M400', depot: 'Ohangaron zavodi', seller: 'Ohangaron Qurilish Mollari', icon: '🏗️', supply: 400, reserve: 950_000, tick: 1_000, unit: 1, delivery: 'Zavoddan olib ketish · 14 kun' },
+  { id: 'rebar', cat: 'metal', product: 'Armatura', grade: 'A500C, Ø12', depot: 'Bekobod ombori', seller: 'Sirdaryo Metall Savdo', icon: '🔩', supply: 150, reserve: 8_600_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 10 kun' },
+  { id: 'wheat', cat: 'food', product: 'Bug\'doy', grade: '3-sinf', depot: 'Jizzax elevatori', seller: 'Jizzax Don Mahsulotlari', icon: '🌾', supply: 200, reserve: 3_400_000, tick: 10_000, unit: 1, delivery: 'Elevatordan olib ketish · 10 kun' },
+  { id: 'sugar', cat: 'food', product: 'Oq shakar', grade: 'TS2 kategoriya', depot: 'Xorazm ombori', seller: 'Xorazm Shakar AJ', icon: '🍬', supply: 90, reserve: 8_200_000, tick: 10_000, unit: 1, delivery: 'Ombordan olib ketish · 7 kun' },
 ];
 
 const BOT_NAMES = ['Namangan Qurilish', 'Andijon Agro Trans', 'Buxoro Avto Servis', 'Samarqand Non', 'Xorazm Logistika', 'Qo\'qon Un Kombinati', 'Termiz Energiya', 'Navoiy Beton', 'Chirchiq Transport', 'Guliston Fermer'];
@@ -22,6 +25,8 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
   const idem = new Map();
   const phones = new Map(); // buyer -> phone (for result calls)
   const listeners = [];
+  const results = []; // global results register, newest last
+  const myResults = new Map(); // buyer -> [{...}]
 
   const wallet = (buyer, name) => {
     if (!wallets.has(buyer)) wallets.set(buyer, { name: name || 'Siz', balance: startBalance });
@@ -39,11 +44,27 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     const seed = randomBytes(16).toString('hex');
     const L = {
       ...terms, round: (prev?.round ?? 0) + 1, phase: 'open', opensAt: t0, closesAt: t0 + openMs + offset,
-      seed, seedHash: sha(seed), orders: new Map(), history: prev?.history ?? [], last: prev?.last ?? null, bots: [],
+      seed, seedHash: sha(seed), orders: new Map(), history: prev?.history ?? seedHistory(terms), last: prev?.last ?? null, bots: [],
     };
     lots.set(terms.id, L);
     scheduleBots(L);
     return L;
+  }
+
+  // Demo history so quotes are not empty at start (clearly synthetic).
+  function seedHistory(terms) {
+    const h = [];
+    let p = terms.reserve * (1 + rng() * 0.02);
+    for (let k = 8; k >= 1; k--) {
+      p = Math.max(terms.reserve, p * (1 + (rng() - 0.45) * 0.03));
+      const price = Math.round(p / terms.tick) * terms.tick;
+      const demand = Math.round(terms.supply * (0.8 + rng() * 0.9));
+      const traded = Math.min(terms.supply, demand);
+      const entry = { round: -k, price, traded, demand, supply: terms.supply, buyers: 3 + Math.floor(rng() * 6), at: now() - k * 15 * 60_000, demo: true };
+      h.push(entry);
+      results.push({ lot: terms.id, product: terms.product, icon: terms.icon, ...entry });
+    }
+    return h;
   }
 
   function scheduleBots(L) {
@@ -105,7 +126,16 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
     L.phase = 'revealed';
     L.revealUntil = now() + revealMs;
     L.last = { ...record, settle, eligibleDemand: res.eligibleDemand, unsold: res.unsold ?? 0 };
-    L.history = [...L.history, { round: L.round, price: res.price, traded: res.traded, demand: res.eligibleDemand, at: L.closesAt }].slice(-12);
+    const entry = { round: L.round, price: res.price, traded: res.traded, demand: res.eligibleDemand, supply: L.supply, buyers: frozen.length, at: L.closesAt, recordHash: record.recordHash };
+    L.history = [...L.history, entry].slice(-20);
+    results.push({ lot: L.id, product: L.product, icon: L.icon, ...entry });
+    if (results.length > 300) results.splice(0, results.length - 300);
+    for (const st of settle) {
+      if (st.buyer.startsWith('bot:')) continue;
+      const list = myResults.get(st.buyer) || [];
+      list.push({ lot: L.id, product: L.product, icon: L.icon, round: L.round, at: L.closesAt, qty: st.qty, maxPrice: st.maxPrice, x: st.x, price: res.price, debit: st.debit, released: st.released, via: st.via });
+      myResults.set(st.buyer, list.slice(-50));
+    }
     for (const fn of listeners) try { fn(L, settle); } catch {}
   }
 
@@ -159,7 +189,7 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
   function publicLot(L, viewer) {
     const mine = viewer ? L.orders.get(viewer) : null;
     const out = {
-      id: L.id, product: L.product, grade: L.grade, depot: L.depot, icon: L.icon, supply: L.supply, reserve: L.reserve, tick: L.tick, unit: L.unit,
+      id: L.id, cat: L.cat, product: L.product, grade: L.grade, depot: L.depot, seller: L.seller, delivery: L.delivery, icon: L.icon, supply: L.supply, reserve: L.reserve, tick: L.tick, unit: L.unit,
       round: L.round, phase: L.phase, opensAt: L.opensAt, closesAt: L.closesAt, revealUntil: L.revealUntil ?? null, seedHash: L.seedHash,
       sealed: L.orders.size, history: L.history,
       mine: mine ? { qty: mine.qty, maxPrice: mine.maxPrice, version: mine.version, reserved: mine.reserved } : null,
@@ -177,7 +207,22 @@ export function createMarket({ openMs = 60_000, revealMs = 25_000, startBalance 
 
   function state(viewer) {
     const w = viewer ? wallet(viewer) : null;
-    return { now: now(), rule: RULE_VERSION, lots: [...lots.values()].map((L) => publicLot(L, viewer)), wallet: w ? { name: w.name, balance: w.balance, reserved: reservedOf(viewer) } : null };
+    const dayAgo = now() - 24 * 3600_000;
+    const recent = results.filter((r) => r.at >= dayAgo);
+    const market = {
+      turnover: recent.reduce((s, r) => s + (r.price || 0) * r.traded, 0),
+      tonnes: recent.reduce((s, r) => s + r.traded, 0),
+      rounds: recent.length,
+      bids: recent.reduce((s, r) => s + r.buyers, 0),
+      sold: recent.length ? recent.reduce((s, r) => s + r.traded, 0) / recent.reduce((s, r) => s + r.supply, 0) : 0,
+    };
+    return {
+      now: now(), rule: RULE_VERSION, categories: CATEGORIES, market,
+      lots: [...lots.values()].map((L) => publicLot(L, viewer)),
+      results: [...results].sort((a, b) => b.at - a.at).slice(0, 60),
+      wallet: w ? { name: w.name, balance: w.balance, reserved: reservedOf(viewer) } : null,
+      mine: viewer ? (myResults.get(viewer) || []).slice().reverse() : [],
+    };
   }
 
   LOT_TERMS.forEach((terms, i) => openRound(terms, now(), i * 9_000));

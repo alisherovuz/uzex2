@@ -174,6 +174,87 @@ h1,h2,h3{margin:0;letter-spacing:-.035em}
 .field .pre{font-weight:800;color:var(--mute)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;padding:12px 18px;border-radius:14px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;box-shadow:var(--shadow2);animation:up .3s both;max-width:90vw}
 .confetti{position:fixed;z-index:80;width:10px;height:14px;border-radius:3px;pointer-events:none;animation:confetti 1.6s cubic-bezier(.1,.7,.3,1) forwards}
+
+/* ---------- product shell ---------- */
+.tabs{display:flex;gap:4px;margin-left:18px;padding:4px;border-radius:14px;background:var(--soft)}
+.tabs a{font-size:14px;font-weight:600;color:var(--mute);padding:8px 14px;border-radius:10px;transition:.15s}
+.tabs a.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.session{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--em);padding:7px 12px;border-radius:999px;background:var(--emsoft)}
+.session .live{width:7px;height:7px;border-radius:50%;background:var(--em2);animation:pulse 1.4s infinite}
+.callbtn{height:38px;padding:0 14px}
+.quotes{position:sticky;top:61px;z-index:15;overflow:hidden;white-space:nowrap;background:#fff;border-bottom:1px solid var(--line);font-size:13px}
+.quotes #qtrack{display:inline-block;animation:ticker 60s linear infinite;padding:9px 0}
+.quotes:hover #qtrack{animation-play-state:paused}
+.q{display:inline-flex;align-items:center;gap:8px;margin:0 22px;font-weight:600}
+.q .p{font-variant-numeric:tabular-nums;font-weight:800}
+.up{color:var(--em)}.dn{color:var(--red)}.fl{color:var(--mute)}
+.bottomnav{display:none}
+.page-h{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:30px 0 18px}
+.page-h h1{font-size:clamp(28px,4.4vw,40px);font-weight:900}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 22px}
+.kpi{padding:18px;position:relative;overflow:hidden}
+.kpi .k{font-size:12px;font-weight:700;color:var(--mute)}
+.kpi .v{font-size:clamp(22px,3vw,30px);font-weight:900;letter-spacing:-.03em;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--faint);margin-top:2px}
+.kpi .ic{position:absolute;right:14px;top:14px;font-size:20px;opacity:.85}
+.heroP{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:stretch;margin:30px 0 22px}
+.heroP .lead{padding:30px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(160deg,#fff,var(--emsoft) 140%)}
+.heroP h1{font-size:clamp(34px,5.4vw,60px);font-weight:900;line-height:1;letter-spacing:-.045em}
+.heroP h1 .gr{background:linear-gradient(90deg,#12b886,#0b8a63);-webkit-background-clip:text;background-clip:text;color:transparent}
+.heroP p{color:var(--mute);font-size:17px;margin:16px 0 22px;line-height:1.45;max-width:520px}
+.next{padding:22px;display:flex;flex-direction:column;gap:12px}
+.next .row{display:flex;align-items:center;gap:12px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.toolbar .search input{flex:1;border:0;outline:0;font:inherit;font-size:14px;background:transparent}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cats button{height:36px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;background:#fff;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink2)}
+.cats button.on{background:var(--ink);color:#fff;box-shadow:none}
+.tbl{padding:0;overflow:hidden}
+.trow{display:grid;grid-template-columns:2.2fr 1.1fr .7fr 1fr 1.2fr .9fr .8fr 120px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px;transition:background .15s}
+.trow.h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:var(--soft);padding:11px 18px}
+.trow:not(.h){cursor:pointer}
+.trow:not(.h):hover{background:#fafcfb}
+.trow:last-child{border-bottom:0}
+.trow .prod{display:flex;align-items:center;gap:12px;min-width:0}
+.trow .prod .em{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:21px;background:var(--soft);flex:none}
+.trow .prod b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .prod small{display:block;color:var(--mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .r{text-align:right}
+.trow .numv{font-weight:800;font-variant-numeric:tabular-nums}
+.chg{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.tmini{display:flex;align-items:center;gap:8px}
+.tmini .cring{width:38px;height:38px}
+.tmini .cring b{font-size:10px}
+.rrow{grid-template-columns:1fr 2fr 1.1fr .8fr 1fr .8fr .8fr}
+.mrow{grid-template-columns:1fr 2fr .9fr 1fr 1fr 1fr}
+.empty{padding:40px;text-align:center;color:var(--mute)}
+.terms{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);margin-bottom:16px}
+.terms div{background:#fff;padding:12px 14px}
+.terms .k{font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+.terms .v{font-size:14px;font-weight:700;margin-top:3px}
+.ltabs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--soft);width:max-content;margin-bottom:12px}
+.ltabs button{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;color:var(--mute)}
+.ltabs button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.chart svg{display:block}
+.chart .ln{stroke-dasharray:2000;stroke-dashoffset:2000;animation:draw 1.6s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.proto{font-size:13px}
+.proto .pr{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.proto .pr:last-child{border:0}
+.proto .pr span:first-child{color:var(--mute)}
+.proto .pr span:last-child{font-weight:700;text-align:right}
+.wcards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+@media(max-width:980px){.tabs{display:none}.hide{display:none!important}.nav{gap:8px;padding:12px 14px}.wallet{padding:6px 10px;font-size:12px}.callbtn{padding:0 12px}html,body{overflow-x:hidden}.heroP{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.terms{grid-template-columns:1fr 1fr}.wcards{grid-template-columns:1fr}
+ .trow.h{display:none}.trow{grid-template-columns:1fr auto;gap:6px 12px;padding:14px}.trow>*:nth-child(n+3){font-size:12px}
+ .trow .hide-m{display:none}
+ .rrow>div:first-child{order:3;grid-column:1/-1;margin-top:-4px}
+ .bottomnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+ .bottomnav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--mute)}
+ .bottomnav a span{font-size:20px}.bottomnav a.on{color:var(--em)}
+ main{padding-bottom:110px}.quotes{top:61px}}
+
 @media(max-width:860px){.grid2{grid-template-columns:1fr}.side{position:static}.steps3{grid-template-columns:1fr}.bidrow{grid-template-columns:1fr auto auto;gap:6px 12px}.bidrow .bx{grid-column:1/-1;grid-row:2}.navlink.hide{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -182,12 +263,17 @@ h1,h2,h3{margin:0;letter-spacing:-.035em}
 <div class="glow"></div>
 <nav class="nav" id="nav">
   <a class="brand" href="#/"><img src="/logo.svg" alt="">aniq<em>auksion</em></a>
+  <div class="tabs" id="tabs">
+    <a href="#/" data-t="home">Bozor</a><a href="#/lots" data-t="lots">Savdolar</a><a href="#/results" data-t="results">Natijalar</a><a href="#/me" data-t="me">Kabinet</a>
+  </div>
   <div class="sp"></div>
-  <a class="navlink hide" href="#/lots" id="nl-lots">Auksionlar</a>
-  <a class="navlink hide" href="#/how" id="nl-how">Qanday ishlaydi</a>
-  <div class="wallet" id="wallet"><span class="dot"></span><span id="wbal">—</span></div>
+  <div class="session hide"><span class="live"></span><span id="clock">—</span></div>
+  <button class="btn sm callbtn" id="navcall">📞<span class="hide"> Qo'ng'iroq</span></button>
+  <a class="wallet" id="wallet" href="#/me"><span class="dot"></span><span id="wbal">—</span></a>
 </nav>
+<div class="quotes" id="quotes"><div id="qtrack"></div></div>
 <main id="app"></main>
+<nav class="bottomnav" id="bottomnav"><a href="#/" data-t="home"><span>📊</span>Bozor</a><a href="#/lots" data-t="lots"><span>🔨</span>Savdolar</a><a href="#/results" data-t="results"><span>📜</span>Natijalar</a><a href="#/me" data-t="me"><span>👤</span>Kabinet</a></nav>
 <script type="module" src="/app.js"></script>
 </body>
 </html>
