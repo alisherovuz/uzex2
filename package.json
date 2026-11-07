@@ -1,0 +1,1 @@
+{"name":"aniq-fair-auction","type":"module","private":true,"scripts":{"start":"node server.js","test":"node test/engine.test.mjs && node test/market.test.mjs"},"engines":{"node":">=20"}}
