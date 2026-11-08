@@ -20,6 +20,7 @@ function normPhone(p) {
   const d = String(p || '').replace(/\D/g, '');
   if (/^998\d{9}$/.test(d)) return '+' + d;
   if (/^\d{9}$/.test(d)) return '+998' + d;
+  if (/^\d{10,15}$/.test(d) && String(p).trim().startsWith('+')) return '+' + d;
   return null;
 }
 function lotsSummary() {
@@ -42,6 +43,7 @@ async function placeCall({ phone, buyer, purpose, text }) {
   });
   const body = await r.json().catch(() => ({}));
   if (!r.ok || body.success === false) { console.error('voice call failed', r.status, JSON.stringify(body).slice(0, 500)); return { ok: false, reason: 'Qo\'ng\'iroq boshlanmadi', detail: body.detail || body.message }; }
+  console.log('voice call ok', purpose, phone.slice(0, 6) + '…', body.conversation_id);
   return { ok: true, conversationId: body.conversation_id };
 }
 // Call buyers back with their result if they ordered by phone (or asked for it).
@@ -53,7 +55,9 @@ market.onClose((L, settle) => {
     const text = s.x > 0
       ? `${L.product} auksioni yakunlandi. Siz ${s.x} tonna oldingiz, narx ${fmt(L.last.result.price)} so'm. ${fmt(s.released)} so'm hisobingizga qaytdi.`
       : `${L.product} auksioni yakunlandi. Bu safar taklifingiz yutmadi, butun summa qaytarildi.`;
-    placeCall({ phone, buyer: s.buyer, purpose: 'result', text }).catch(() => {});
+    console.log('result call scheduled', L.id, L.round, s.x + 't');
+    // Wait so the buyer has hung up the ordering call before we ring back.
+    setTimeout(() => placeCall({ phone, buyer: s.buyer, purpose: 'result', text }).catch((e) => console.error('result call error', e.message)), Number(process.env.RESULT_CALL_DELAY_MS || 45_000));
   }
 });
 
@@ -86,13 +90,28 @@ createServer(async (req, res) => {
       market.wallet(buyer, b.name); market.phones.set(buyer, phone);
       return send(res, 200, await placeCall({ phone, buyer, purpose: 'order' }));
     }
+    // ElevenLabs conversation-initiation webhook: for INCOMING calls, tell the agent who is calling.
+    if (p === '/api/voice/init' && req.method === 'POST') {
+      const b = await body(req);
+      const phone = normPhone(b.caller_id || b.from || '');
+      const buyer = phone ? 'tel:' + phone : 'tel:unknown';
+      if (phone) { market.wallet(buyer, 'Telefon ' + phone.slice(-4)); market.phones.set(buyer, phone); }
+      console.log('inbound call', phone ? phone.slice(0, 6) + '…' : 'unknown');
+      return send(res, 200, { type: 'conversation_initiation_client_data', dynamic_variables: { buyer_id: buyer, purpose: 'order', lots: lotsSummary() || 'Hozir ochiq lot yo\'q', result_text: '' } });
+    }
     // ElevenLabs agent server tools (webhooks). Protected by a shared secret header.
     if (p.startsWith('/api/voice/tool/')) {
       if (!EL.secret || req.headers['x-tool-secret'] !== EL.secret) return send(res, 401, { ok: false });
       const b = await body(req);
       if (p === '/api/voice/tool/lots') return send(res, 200, { lots: lotsSummary() || 'Hozir ochiq auksion yo\'q' });
       if (p === '/api/voice/tool/order') {
-        const r = market.submit({ lotId: b.lot_id, buyer: String(b.buyer_id || ''), qty: int(b.qty), maxPrice: int(b.max_price), idemKey: b.idem_key, via: 'phone' });
+        const phone = normPhone(b.phone || b.caller_id);
+        const buyer = String(b.buyer_id && !String(b.buyer_id).includes('{{') ? b.buyer_id : phone ? 'tel:' + phone : '');
+        if (!buyer) return send(res, 200, { ok: false, say: 'Xaridorni aniqlab bo\'lmadi' });
+        if (phone && !market.phones.has(buyer)) market.phones.set(buyer, phone);
+        market.wallet(buyer, b.name || (phone ? 'Telefon ' + phone.slice(-4) : undefined));
+        const r = market.submit({ lotId: b.lot_id, buyer, qty: int(b.qty), maxPrice: int(b.max_price), idemKey: b.idem_key, via: 'phone' });
+        console.log('phone order', b.lot_id, b.qty, b.max_price, r.ok ? 'ok' : r.reason);
         return send(res, 200, r.ok ? { ok: true, say: `Taklif qabul qilindi: ${b.qty} tonna, eng ko'pi bilan ${fmt(int(b.max_price))} so'm. Raund yopilgach natijani aytamiz.` } : { ok: false, say: r.reason });
       }
       return send(res, 404, { ok: false });
